@@ -44,7 +44,7 @@ Akses Apilikasi URL :
 
 | Role | Username | Password |
 |---|---|---|
-| Admin | `admin` | `password` |
+| Admin | `admin` | `admin123` |
 | Mahasiswa | Nama Lengkap | NPM |
 
 ## Informasi Pengembang
