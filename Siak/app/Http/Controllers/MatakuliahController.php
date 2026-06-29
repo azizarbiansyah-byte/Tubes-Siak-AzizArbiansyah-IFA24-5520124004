@@ -10,11 +10,20 @@ class MatakuliahController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $data['matakuliah'] = Matakuliah::all();
+        $search = $request->keyword;
 
-        return view('pages.matakuliah.daftar-matakuliah', $data);
+        $matakuliah = Matakuliah::when($search, function($query, $search) {
+                        return $query->where('kode_matakuliah', 'like', "%{$search}%")
+                                    ->orWhere('nama_matakuliah', 'like', "%{$search}%")
+                                    ->orWhere('sks', 'like', "%{$search}%");
+                    })
+                    ->orderBy('nama_matakuliah', 'asc')
+                    ->paginate(10)
+                    ->withQueryString();
+
+        return view('pages.matakuliah.daftar-matakuliah', compact('matakuliah'));
     }
 
     /**
@@ -34,7 +43,7 @@ class MatakuliahController extends Controller
             [
                 'kode_matakuliah' => 'required|size:8|unique:matakuliah,kode_matakuliah',
                 'nama_matakuliah' => 'required|max:50',
-                'sks' => 'required|integer|min:1|max:6'
+                'sks' => 'required|integer|in:1,2,3,4,5,6'
             ]
         );
 
@@ -69,7 +78,7 @@ class MatakuliahController extends Controller
             [
                 'kode_matakuliah' => 'required|size:8|unique:matakuliah,kode_matakuliah,' . $id . ',kode_matakuliah',
                 'nama_matakuliah' => 'required|max:50',
-                'sks' => 'required|integer|min:1|max:6'
+                'sks' => 'required|integer|in:1,2,3,4,5,6'
             ]
         );
 

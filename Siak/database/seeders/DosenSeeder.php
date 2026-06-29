@@ -14,9 +14,9 @@ class DosenSeeder extends Seeder
     public function run(): void
     {
         $dosenList = [
-            ['nidn' => '0001234501', 'nama' => 'Jiraya'],
-            ['nidn' => '0001234502', 'nama' => 'Namikaze Minato'],
-            ['nidn' => '0001234503', 'nama' => 'Hatake Kakashi'],
+            ['nidn' => '0001234501', 'nama' => 'Aziz'],
+            ['nidn' => '0001234502', 'nama' => 'Ansyah'],
+            ['nidn' => '0001234503', 'nama' => 'Arbi'],
         ];
 
         foreach ($dosenList as $dosen) {

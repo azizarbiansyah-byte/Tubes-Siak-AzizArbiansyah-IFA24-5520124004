@@ -31,7 +31,15 @@ class KrsController extends Controller
 
         $sudahDiambil = Krs::where('npm', $npm)->pluck('kode_matakuliah');
 
+             $totalSks = Krs::where('npm', $npm)
+            ->with('matakuliah')
+            ->get()
+            ->sum(fn($k) => $k->matakuliah->sks ?? 0);
+
         $data['matakuliah'] = Matakuliah::whereNotIn('kode_matakuliah', $sudahDiambil)->get();
+
+            $data['totalSks'] = $totalSks;
+            $data['maxSks'] = 24;
 
         return view('pages.krs.create-krs', $data);
     }
@@ -56,6 +64,21 @@ class KrsController extends Controller
         if($konflik){
             return back()->withErrors([
                 'kode_matakuliah' => 'Matakuliah sudah diambil'
+            ])->withInput();
+        }
+
+        $totalSks = Krs::where('npm', $user->npm)
+            ->with('matakuliah')
+            ->get()
+            ->sum(fn($k) => $k->matakuliah->sks ?? 0);
+
+        $matakuliah = Matakuliah::findOrFail($validated['kode_matakuliah']);
+        $sksBaru = $matakuliah->sks;
+
+        if (($totalSks + $sksBaru) > 24) {
+            return back()->withErrors([
+                'kode_matakuliah' => 'Tidak dapat menambah mata kuliah ini karena melebihi batas maksimal 24 SKS. ' .
+                'SKS kamu saat ini: ' . $totalSks . ' SKS.',
             ])->withInput();
         }
 
@@ -110,8 +133,8 @@ class KrsController extends Controller
 
         $data['mahasiswa'] = Auth::user()->mahasiswa;
 
-        $pdf = Pdf::loadView('pages.krs.pdf', $data);
+        $pdf = Pdf::loadView('pages.krs.pdf-krs', $data);
 
-        return $pdf->stream('KRS-' . $npm . '.pdf');
+        return $pdf->stream('KRS    -' . $npm . '.pdf');
     }
 }

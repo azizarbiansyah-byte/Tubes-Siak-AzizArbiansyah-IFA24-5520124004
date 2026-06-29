@@ -12,11 +12,20 @@ class DosenController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $data['dosen'] = Dosen::all();
+        //$data['dosen'] = Dosen::all();
+        $search = $request->keyword;
 
-        return view('pages.dosen.daftar-dosen', $data);
+        $dosen = Dosen::when($search, function($query, $search) {
+                    return $query->where('nidn', 'like', "%{$search}%")
+                                ->orWhere('nama', 'like', "%{$search}%");
+                })
+                ->orderBy('nama', 'asc')
+                ->paginate(10)
+                ->withQueryString();
+
+        return view('pages.dosen.daftar-dosen', compact('dosen'));
     }
 
     /**
@@ -68,7 +77,6 @@ class DosenController extends Controller
     {
         $validated = $request->validate(
             [
-                'nidn' => 'required|size:10|unique:dosen,nidn,' . $id . ',nidn',
                 'nama' => 'required|max:50'
             ]
         );

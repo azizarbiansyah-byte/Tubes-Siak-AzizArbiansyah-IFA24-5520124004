@@ -13,11 +13,23 @@ class MahasiswaController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $data['mahasiswa'] = Mahasiswa::with('dosen')->get();
+         $search = $request->keyword;
 
-        return view('pages.mahasiswa.daftar-mahasiswa', $data);
+        $mahasiswa = Mahasiswa::with('dosen')
+            ->when($search, function($query, $search) {
+                return $query->where('npm', 'like', "%{$search}%")
+                            ->orWhere('nama', 'like', "%{$search}%")
+                            ->orWhereHas('dosen', function($q) use ($search) {
+                                $q->where('nama', 'like', "%{$search}%");
+                            });
+            })
+            ->orderBy('nama', 'asc')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('pages.mahasiswa.daftar-mahasiswa', compact('mahasiswa'));
     }
 
     /**
@@ -46,8 +58,9 @@ class MahasiswaController extends Controller
 
         $user = User::create([
             'name'     => $mahasiswa->nama,
-            'email'    => $mahasiswa->npm . '@student.unsur.ac.id',
-            'password' => Hash::make('password'),
+            'username' => $mahasiswa->nama,
+            'email'    => $mahasiswa->nama . '@student.unsur.ac.id',
+            'password' => Hash::make($mahasiswa->npm),
             'npm'      => $mahasiswa->npm,
         ]);
 
@@ -84,7 +97,6 @@ class MahasiswaController extends Controller
 
         $validated = $request->validate(
             [
-                'npm' => 'required|size:10|unique:mahasiswa,npm,' . $id . ',npm',
                 'nidn' => 'required|exists:dosen,nidn',
                 'nama' => 'required|max:50'
             ]

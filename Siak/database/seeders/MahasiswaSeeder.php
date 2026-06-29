@@ -28,6 +28,7 @@ class MahasiswaSeeder extends Seeder
             
             $user = User::create([
                 'name'     => $mahasiswa->nama,
+                'username' => $mahasiswa->npm,
                 'email'    => strtolower(str_replace(' ', '', $mahasiswa->nama)) . '@gmail.com',
                 'password' => Hash::make('password'),
                 'npm'      => $mahasiswa->npm,

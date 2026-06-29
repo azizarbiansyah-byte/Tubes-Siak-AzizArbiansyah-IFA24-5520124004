@@ -9,7 +9,7 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-return view('welcome');
+return view('auth.login');
 });
 
 Route::middleware(['auth'])->group(function () {
@@ -17,6 +17,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
+
+    Route::get('/jadwal', [JadwalController::class, 'index'])->name('jadwal.index');
 
     Route::middleware(['role:Admin'])->group(function () {
 
@@ -32,7 +34,6 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/matakuliah/create', [MatakuliahController::class, 'create'])->name('matakuliah.create');
         Route::post('/matakuliah', [MatakuliahController::class, 'store'])->name('matakuliah.store');
 
-        Route::get('/jadwal', [JadwalController::class, 'index'])->name('jadwal.index');
         Route::get('/jadwal/create', [JadwalController::class, 'create'])->name('jadwal.create');
         Route::post('/jadwal', [JadwalController::class, 'store'])->name('jadwal.store');
         Route::get('/jadwal/{id}/edit', [JadwalController::class, 'edit'])->name('jadwal.edit');
@@ -61,11 +62,12 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/krs/print', [KrsController::class, 'print'])->name('krs.print');
         Route::get('/krs/export', [KrsController::class, 'export'])->name('krs.export');
         
-        Route::get('/jadwal', [JadwalController::class, 'index'])->name('jadwal.index');
         
         Route::delete('/krs/{id}', [KrsController::class, 'destroy'])->name('krs.destroy');
     });
 
 });
+
+
 
 require __DIR__.'/auth.php';

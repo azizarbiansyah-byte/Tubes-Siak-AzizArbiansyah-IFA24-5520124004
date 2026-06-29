@@ -6,17 +6,32 @@ use App\Models\Dosen;
 use App\Models\Jadwal;
 use App\Models\Matakuliah;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class JadwalController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $data['jadwal'] = Jadwal::with(['dosen', 'matakuliah'])->get();
+        $search = $request->keyword;
 
-        return view('pages.jadwal.daftar-jadwal', $data);
+        $jadwal = Jadwal::with(['dosen', 'matakuliah'])
+            ->when($search, function($query, $search) {
+                if (preg_match('/^[A-Fa-f]$/', $search)) {
+                    return $query->where('kelas', strtoupper($search));
+                }
+                return $query->where('hari', 'like', "%{$search}%")
+                            ->orWhereHas('matakuliah', function($q) use ($search) {
+                                $q->where('nama_matakuliah', 'like', "%{$search}%");
+                            });
+            })
+            ->orderBy('hari', 'asc')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('pages.jadwal.daftar-jadwal', compact('jadwal'));
     }
 
     /**
@@ -43,14 +58,35 @@ class JadwalController extends Controller
             'jam'             => 'required|date_format:H:i',
         ]);
 
-        $konflik = Jadwal::where('hari', $validated['hari'])
+        $konflikKelas = Jadwal::where('hari', $validated['hari'])
             ->where('jam', '2026-06-30 ' . $validated['jam'] . ':00')
             ->where('kelas', $validated['kelas'])
             ->exists();
 
-        if ($konflik) {
+        if ($konflikKelas) {
             return back()->withErrors([
                 'hari' => 'Jadwal kelas ' . $validated['kelas'] . ' hari ' . $validated['hari'] . ' jam ' . $validated['jam'] . ' sudah ada.'
+            ])->withInput();
+        }
+
+        $konflikDosen = Jadwal::where('nidn', $request->nidn)
+            ->where('hari', $request->hari)
+            ->where('jam', '2026-06-30 ' . $request->jam . ':00')
+            ->exists();
+
+        if ($konflikDosen) {
+            $jadwalDosen = Jadwal::with('matakuliah')
+                ->where('nidn', $request->nidn)
+                ->where('hari', $request->hari)
+                ->where('jam', '2026-06-30 ' . $request->jam . ':00')
+                ->first();
+
+            return back()->withErrors([
+                'nidn' => 'Dosen ini sudah mengajar ' .
+                        ($jadwalDosen->matakuliah->nama_matakuliah ?? '-') .
+                        ' di kelas ' . $jadwalDosen->kelas .
+                        ' pada hari ' . $request->hari .
+                        ' jam ' . $request->jam . '.'
             ])->withInput();
         }
 
@@ -93,17 +129,42 @@ class JadwalController extends Controller
             'jam'             => 'required|date_format:H:i',
         ]);
 
-        $konflik = Jadwal::where('hari', $validated['hari'])
-            ->where('jam', '2026-06-30 ' . $validated['jam'] . ':00')
-            ->where('kelas', $validated['kelas'])
+       $konflikKelas = Jadwal::where('hari', $request->hari)
+            ->where('kelas', $request->kelas)
+            ->where('jam', '2026-06-30 ' . $request->jam . ':00')
             ->where('id', '!=', $id)
             ->exists();
 
-        if ($konflik) {
+        if ($konflikKelas) {
             return back()->withErrors([
-                'hari' => 'Jadwal kelas ' . $validated['kelas'] . ' hari ' . $validated['hari'] . ' jam ' . $validated['jam'] . ' sudah ada.'
+                'jam' => 'Kelas ' . $request->kelas . ' pada hari ' . $request->hari .
+                        ' jam ' . $request->jam . ' sudah ada jadwal lain.'
             ])->withInput();
         }
+
+         $konflikDosen = Jadwal::where('nidn', $request->nidn)
+            ->where('hari', $request->hari)
+            ->where('jam', '2026-06-30 ' . $request->jam . ':00')
+            ->where('id', '!=', $id)
+            ->exists();
+
+        if ($konflikDosen) {
+            $jadwalDosen = Jadwal::with('matakuliah')
+                ->where('nidn', $request->nidn)
+                ->where('hari', $request->hari)
+                ->where('jam', '2026-06-30 ' . $request->jam . ':00')
+                ->where('id', '!=', $id)
+                ->first();
+
+            return back()->withErrors([
+                'nidn' => 'Dosen ini sudah mengajar ' .
+                        ($jadwalDosen->matakuliah->nama_matakuliah ?? '-') .
+                        ' di kelas ' . $jadwalDosen->kelas .
+                        ' pada hari ' . $request->hari .
+                        ' jam ' . $request->jam . '.'
+            ])->withInput();
+        }
+
 
         $validated['jam'] = '2000-01-01 ' . $validated['jam'] . ':00';
 
